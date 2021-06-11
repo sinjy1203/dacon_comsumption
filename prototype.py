@@ -13,6 +13,12 @@ plt.rcParams['font.family'] = 'NanumGothic'
 pd.set_option('display.max_row', 10)
 pd.set_option('display.max_columns', 10)
 
+log_dir = Path("log")
+log_dir.mkdir(exist_ok=True)
+
+model_dir = Path('model')
+model_dir.mkdir(exist_ok=True)
+
 data_dir = Path("data")
 train_dir = data_dir / "train.csv"
 test_dir = data_dir / "test.csv"
@@ -91,6 +97,20 @@ def preprocess(batch):
 
     return (x1_batch, x2_batch), (y_batch[:, 0, :6], y_batch[:, 0, 6], y_batch[:, 0, 7])
 
+def preprocess_test(sequence): ## sequence shape: 9x9
+    x1 = sequence[:, :-1]
+    x2 = sequence[:, -1]
+
+    x1_num = x1[:, :6]
+    x1_cat = x1[:, 6:]
+
+    x1_num = (x1_num - np.array(train_mean)) / np.array(train_std)
+    x2 -= 1
+
+    x1 = np.concatenate([x1_num, x1_cat], axis=-1)
+
+    return x1[np.newaxis, ...], x2[np.newaxis, ...]
+
 def make_dataset(df):
     dataset = keras.preprocessing.timeseries_dataset_from_array(
         data=np.array(df, dtype=np.float32),
@@ -150,25 +170,74 @@ model.compile(
 )
 model.fit(train_dataset, epochs=1000,
           validation_data=val_dataset,
-          callbacks=[keras.callbacks.EarlyStopping(patience=5)])
+          callbacks=[keras.callbacks.EarlyStopping(patience=5),
+                     keras.callbacks.TensorBoard(log_dir)])
 
 ##
+model.save(model_dir / "GRU3.h5")
+
+##
+model = keras.models.load_model(model_dir / "GRU3.h5")
+
+## 예측하기
 submission_dir = data_dir / "sample_submission.csv"
 submission = pd.read_csv(submission_dir)
 
 ##
-dataset = keras.preprocessing.timeseries_dataset_from_array(
-    data = np.arange(9),
-    targets=None,
-    sequence_length=3,
-    sequence_stride=3,
-    sampling_rate=2
-)
+def prepare_test(test_df, train_df):
+    columns = ['일조(hr, 3시간)', '습도(%)', '강수량(mm, 6시간)', '전력사용량',
+               '풍속(m/s)', '기온(°C)', '비전기냉방설비운영', '태양광보유', 'num']
+    test_df['전력사용량'] = np.nan
+    test_df_new = test_df[columns]
+    train_df.columns = columns
+
+    new_lst = []
+
+    for num in range(1, 61):
+        train_num = train_df[train_df['num'] == num].iloc[-9:]
+        test_num = test_df_new[test_df_new['num'] == num]
+
+        test_num['비전기냉방설비운영'] = train_num['비전기냉방설비운영'].iloc[0]
+        test_num['태양광보유'] = train_num['태양광보유'].iloc[0]
+
+        new_num = pd.concat([train_num, test_num], axis=0)
+        new_lst += [new_num]
+
+    new_df = pd.concat(new_lst, axis=0)
+    return new_df
 
 ##
-x1, x2, y = None, None, None
-for x1_, x2_, y_ in train_dataset.take(1):
-    x1, x2, y = x1_, x2_, y_
+test_df = prepare_test(test, val)
 
 ##
+total_pred_lst = []
+for num in range(1, 61):
+    x = np.array(test_df[test_df['num'] == num])  ## shape 177x9
+    length = x.shape[0] - 9
 
+    for i in range(length):
+        x_sequence = x[i:i+9].copy()
+        x1, x2 = preprocess_test(x_sequence)
+        pred = model.predict((x1, x2))
+
+        if i % 6 == 0:
+            x[i+9, 3] = pred[0][0][3]
+        elif i % 3 == 0:
+            x[i+9, 2:4] = pred[0][0][2:4]
+        else:
+            x[i+9, 0:6] = pred[0][0][0:6]
+    total_pred_lst += [x[9:, 3]]
+
+##
+total_pred = np.concatenate(total_pred_lst)
+
+##
+pred_dir = Path('pred')
+pred_dir.mkdir(exist_ok=True)
+submission['answer'] = total_pred.reshape((-1, 1))
+submission.to_csv(pred_dir / 'my_submission.csv', index=False)
+
+##
+a = np.arange(10)
+b = a[:5]
+b -= 1
