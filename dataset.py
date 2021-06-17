@@ -41,7 +41,7 @@ class Dataset:
         self.val = pd.concat([non_cat_val, val[self.cat_columns + self.embedding_column]], axis=1)
 
     def preprocess(self, batch):
-        y_batch = batch[:, 9:, :-1]
+        y_batch = batch[:, 9:, :6]
         x1_batch_ = batch[:, :9, :-1]
         x2_batch = batch[:, :9, -1]  ## embedding
 
@@ -55,23 +55,9 @@ class Dataset:
 
         x1_batch.set_shape([None, 9, 8])
         x2_batch.set_shape([None, 9])
-        y_batch.set_shape([None, 1, 8])
+        y_batch.set_shape([None, 1, 6])
 
-        return (x1_batch, x2_batch), (y_batch[:, 0, :6], y_batch[:, 0, 6], y_batch[:, 0, 7])
-
-    def preprocess_test(self, sequence):
-        x1 = sequence[:, :-1]
-        x2 = sequence[:, -1]
-
-        x1_num = x1[:, :6]
-        x1_cat = x1[:, 6:]
-
-        x1_num = (x1_num - np.array(self.train_mean)) / np.array(self.train_std)
-        x2 -= 1
-
-        x1 = np.concatenate([x1_num, x1_cat], axis=-1)
-
-        return x1[np.newaxis, ...], x2[np.newaxis, ...]
+        return (x1_batch, x2_batch), y_batch
 
     def make_dataset(self, df):
         dataset = keras.preprocessing.timeseries_dataset_from_array(
@@ -95,6 +81,22 @@ class Dataset:
         return self.make_dataset(self.val)
 
     def test_df(self):
-        test_df = (self.test)
+        test_df = self.test.copy()
+        val_df = self.val.copy()
+        test_df['전력사용량'] = np.nan
         test_df = test_df[self.test_columns]
-        self.
+        val_df.columns = self.test_columns
+
+        new_lst = []
+        for num in range(1, 61):
+            train_num = val_df[val_df['num'] == num].iloc[-9:]
+            test_num = test_df[test_df['num'] == num]
+
+            test_num['비전기냉방설비운영'] = train_num['비전기냉방설비운영'].iloc[0]
+            test_num['태양광보유'] = train_num['태양광보유'].iloc[0]
+
+            new_num = pd.concat([train_num, test_num], axis=0)
+            new_lst += [new_num]
+
+        new_test_df = pd.concat(new_lst, axis=0)
+        return new_test_df
