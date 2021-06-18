@@ -9,11 +9,14 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 class Dataset:
-    def __init__(self, data_dir):
-        self.train_dir = data_dir / "train.csv"
-        self.test_dir = data_dir / "test.csv"
+    def __init__(self, dir):
+        self.data_dir = Path(dir) / "data"
+
+        self.train_dir = self.data_dir / "train.csv"
+        self.test_dir = self.data_dir / "test.csv"
 
         train_val = pd.read_csv(self.train_dir, encoding='cp949')
+        train_val.pop('date_time')
         self.test = pd.read_csv(self.test_dir, encoding='cp949')
 
         self.building_num = 60
@@ -81,10 +84,10 @@ class Dataset:
         return self.make_dataset(self.val)
 
     def test_df(self):
-        test_df = self.test.copy()
+        test = self.test.copy()
         val_df = self.val.copy()
-        test_df['전력사용량'] = np.nan
-        test_df = test_df[self.test_columns]
+        test['전력사용량'] = np.nan
+        test_df = test[self.test_columns]
         val_df.columns = self.test_columns
 
         new_lst = []

@@ -9,7 +9,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 class RNN:
-    def __init__(self, rnn_layer_num=3):
+    def __init__(self, dir, rnn_layer_num=3):
+        self.dir = Path(dir)
         inputs_1 = keras.layers.Input(shape=(9, 8))
         inputs_2 = keras.layers.Input(shape=(9,))
 
@@ -24,7 +25,8 @@ class RNN:
         outputs = keras.layers.Dense(6)(x)
         self.model = keras.models.Model(inputs=[inputs_1, inputs_2], outputs=outputs)
 
-    def train(self, train, val, lr=0.01, epochs=1000, log_dir=None):
+    def train(self, train, val, lr=0.01, epochs=1000):
+        log_dir = self.dir / "log"
         optimizer = keras.optimizers.Adam(learning_rate=lr)
         self.model.compile(
             optimizer=optimizer,
@@ -36,10 +38,13 @@ class RNN:
                   callbacks=[keras.callbacks.EarlyStopping(patience=5),
                              keras.callbacks.TensorBoard(log_dir)])
 
-    def save(self, model_dir):
+    def save(self):
+        model_dir = self.dir / "model"
+        model_dir = model_dir / "model.h5"
         self.model.save(model_dir)
 
-    def load_model(self, model_dir):
+    def load_model(self):
+        model_dir = self.dir / "model"
         self.model = keras.models.load_model(model_dir)
 
     def preprocess_test(self, sequence):
@@ -56,7 +61,10 @@ class RNN:
 
         return x1[np.newaxis, ...], x2[np.newaxis, ...]
 
-    def predict(self, test_df, submission_dir, mean, std):
+    def predict(self, test_df, mean, std):
+        submission_dir = self.dir / "data" / "sample_submission.csv"
+        pred_dir = self.dir / "pred"
+
         submission = pd.read_csv(submission_dir)
         self.train_mean = mean
         self.train_std = std
@@ -81,7 +89,6 @@ class RNN:
 
         total_pred = np.concatenate(total_pred_lst)
 
-        pred_dir = Path('pred')
         pred_dir.mkdir(exist_ok=True)
         submission['answer'] = total_pred.reshape((-1, 1))
         submission.to_csv(pred_dir / 'my_submission.csv', index=False)
