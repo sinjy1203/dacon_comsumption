@@ -177,7 +177,7 @@ model.fit(train_dataset, epochs=1000,
 model.save(model_dir / "GRU3.h5")
 
 ##
-model = keras.models.load_model(model_dir / "GRU3.h5")
+model = keras.models.load_model(model_dir / "model.h5")
 
 ## 예측하기
 submission_dir = data_dir / "sample_submission.csv"

@@ -1,6 +1,9 @@
 ##
 import argparse
 from pathlib import Path
+
+import pandas as pd
+
 from dataset import Dataset
 from model import RNN
 
@@ -19,6 +22,7 @@ args = parser.parse_args()
 dataset = Dataset(dir=Path(args.dir))
 
 model = RNN(dir=Path(args.dir), rnn_layer_num=args.layer_num)
+
 ##
 model.train(train=dataset.train_dataset(),
             val=dataset.val_dataset(),
@@ -28,4 +32,7 @@ model.train(train=dataset.train_dataset(),
 model.save()
 
 ##
-model.predict(dataset.test_df(), )
+model.load_model()
+
+##
+model.predict(dataset.test_df(), dataset.train_mean, dataset.train_std)

@@ -44,7 +44,7 @@ class RNN:
         self.model.save(model_dir)
 
     def load_model(self):
-        model_dir = self.dir / "model"
+        model_dir = self.dir / "model" / "model.h5"
         self.model = keras.models.load_model(model_dir)
 
     def preprocess_test(self, sequence):
@@ -80,14 +80,15 @@ class RNN:
                 pred = self.model.predict((x1, x2))
 
                 if i % 6 == 0:
-                    x[i + 9, 3] = pred[0][0][3]
+                    x[i + 9, 3] = pred[0][1]
                 elif i % 3 == 0:
-                    x[i + 9, 2:4] = pred[0][0][2:4]
+                    x[i + 9, 2:4] = pred[0][1:3]
                 else:
-                    x[i + 9, 0:6] = pred[0][0][0:6]
-            total_pred_lst += [x[9:, 3]]
+                    x[i + 9, 0:6] = pred[0][0:6]
+            total_pred_lst += [x[9:, 1]]
 
         total_pred = np.concatenate(total_pred_lst)
+        self.pred = total_pred
 
         pred_dir.mkdir(exist_ok=True)
         submission['answer'] = total_pred.reshape((-1, 1))
