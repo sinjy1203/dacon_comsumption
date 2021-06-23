@@ -80,11 +80,12 @@ class RNN:
                 pred = self.model.predict((x1, x2))
 
                 if i % 6 == 0:
-                    x[i + 9, 3] = pred[0][1]
+                    x[i + 9, 1] = pred[0][1]
                 elif i % 3 == 0:
-                    x[i + 9, 2:4] = pred[0][1:3]
+                    x[i + 9, 1:3] = pred[0][1:3]
                 else:
                     x[i + 9, 0:6] = pred[0][0:6]
+
             total_pred_lst += [x[9:, 1]]
 
         total_pred = np.concatenate(total_pred_lst)
