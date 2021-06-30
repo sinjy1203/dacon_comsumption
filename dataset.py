@@ -27,8 +27,6 @@ class Dataset:
         train = pd.concat([df.iloc[:self.val_slice] for df in train_val_num])
         val = pd.concat([df.iloc[self.val_slice:] for df in train_val_num])
 
-        # self.train_columns = ['습도(%)', '전력사용량(kWh)', '강수량(mm)', '일조(hr)', '풍속(m/s)', '기온(°C)',
-        #             '비전기냉방설비운영', '태양광보유', 'num']
         self.test_columns = ['습도(%)', '전력사용량', '강수량(mm, 6시간)', '일조(hr, 3시간)',
                    '풍속(m/s)', '기온(°C)', '비전기냉방설비운영', '태양광보유', 'num']
         self.cat_columns = ['비전기냉방설비운영', '태양광보유']
@@ -208,9 +206,6 @@ class MultiDataset:
             val_num.columns = self.test_columns[:-1]
             # train_num = val_df[val_df['num'] == num].iloc[-9:]
             test_num = test_df[test_df['num'] == num]
-
-            # test_num['비전기냉방설비운영'].iloc[:] = val_num['비전기냉방설비운영'].iloc[0]
-            # test_num['태양광보유'].iloc[:] = val_num['태양광보유'].iloc[0]
 
             new_num = pd.concat([val_num, test_num.drop(['num'], axis=1)], axis=0)
             test_lst += [new_num]

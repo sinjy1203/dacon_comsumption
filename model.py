@@ -141,7 +141,7 @@ class MiniRNN:
         self.model = keras.models.load_model(model_dir)
 
     def preprocess_test(self, sequence):
-        x = sequence[:, :-1]
+        x = sequence[:, :]
 
         x = x[:, :6]
 
@@ -160,9 +160,9 @@ class MiniRNN:
 
         for i in range(length):
             x_sequence = x[i:i + 9].copy()
-            x = self.preprocess_test(x_sequence)
-            pred = self.model.predict(x)
-
+            x_sequence = self.preprocess_test(x_sequence)
+            pred = self.model.predict(x_sequence)
+            # print(x.shape, pred[1][0][0])
             if i % 6 == 0:
                 x[i + 9, 1] = pred[1][0][0]
             elif i % 3 == 0:
@@ -176,6 +176,7 @@ class MiniRNN:
 class MultiRNN:
     def __init__(self, dir, rnn_layer_num=3):
         self.model_lst = [MiniRNN(dir=dir, rnn_layer_num=rnn_layer_num, num=num) for num in range(1, 61)]
+        self.dir = dir
 
     def train(self, train_lst, val_lst, lr=0.01, epochs=1000):
         for model, train, val in zip(self.model_lst, train_lst, val_lst):
@@ -197,7 +198,8 @@ class MultiRNN:
 
         total_pred_lst = []
         for model, test, mean, std in zip(self.model_lst, test_lst, mean_lst, std_lst):
-            total_pred_lst += [model.predict(test, mean, std)]
+            model.predict(test, mean, std)
+            total_pred_lst += [model.pred]
 
         total_pred = np.concatenate(total_pred_lst, axis=0)
         self.pred = total_pred

@@ -2,6 +2,7 @@
 import argparse
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from dataset import *
@@ -58,3 +59,11 @@ multi_model.load_model()
 multi_model.predict(multi_dataset.test_df(), multi_dataset.train_mean_lst,
                     multi_dataset.train_std_lst)
 
+##
+sample = multi_dataset.train_lst[0].to_numpy()[:9]
+
+##
+sample_process = (sample - multi_dataset.train_mean_lst[0].to_numpy()) / multi_dataset.train_std_lst[0].to_numpy()
+
+##
+multi_model.model_lst[0].model.predict(sample_process[np.newaxis, ...])
