@@ -18,7 +18,9 @@
 
 ## 3. file 설명
 `main.py` training model & prediction
+
 `dataset.py` sliding window, categorical & numerical data preprocessing 
+
 `model.py` RNN model
 
 </br>
